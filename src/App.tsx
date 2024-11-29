@@ -1,6 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import './App.css';
 import axios from "axios";
+import {
+    IconButton,
+    Button,
+    Typography,
+    List,
+    ListItem,
+    ListItemText,
+    styled,
+    TextField,
+    Container, Box
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import Grid from '@mui/material/Grid2';
 
 interface Task {
     id: string;
@@ -9,6 +22,7 @@ interface Task {
 
 function App() {
     const [value, setValue] = useState('');
+    const [editValue, setEditValue] = useState('');
     const [tasks, setTasks] = useState<Task[]>([]);
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,10 +54,6 @@ function App() {
             .catch((err) => console.log(err));
     };
 
-    useEffect(() => {
-        fetchTasks();
-    }, []);
-
     const deleteTask = (id: string) => {
         axios.delete<Task>(`https://cae76bc591977258ac51.free.beeceptor.com/api/tasks/${id}`, {
             headers: {
@@ -56,31 +66,70 @@ function App() {
             .catch((err) => console.log(err));
     }
 
+    const editTask = (id: string) => {
+        axios.put<Task>(`https://cae76bc591977258ac51.free.beeceptor.com/api/tasks/${id}`, {
+            text: editValue,
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+            .then(() => {
+                setEditValue('');
+                fetchTasks();
+            })
+            .catch((err) => console.log(err));
+    };
+
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
+    const Demo = styled('div')(({theme}) => ({
+        backgroundColor: theme.palette.background.paper,
+    }));
+
     return (
-        <div className="App">
-            <h1>TODO</h1>
-            <div>
-                <ul className="tasks-container">
-                    {
-                        tasks && tasks.map((task: Task) => (
-                            <li key={task.id} className="task">{task.text}
-                                <button onClick={() => deleteTask(task.id)} className="task-delete">DELETE</button>
-                                <button>EDIT</button>
-                            </li>
-                        ))
-                    }
-                </ul>
-                <div className='new-task-container'>
-                    <input
-                        type='text'
+        <Container maxWidth='xs' sx={{
+            marginTop: '2rem',
+        }}>
+            <Grid>
+                <Typography align="center" variant="h6" component="h1">
+                    TODO
+                </Typography>
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                }}>
+                    <TextField
+                        id="standard-basic"
                         value={value}
-                        placeholder='TODO TASK'
+                        variant="standard"
                         onChange={handleChange}
+                        placeholder='TODO TASK'
+                        sx={{
+                            width: '60%'
+                        }}
                     />
-                    <button type='submit' onClick={handleSubmit}>ADD TASK</button>
-                </div>
-            </div>
-        </div>
+                    <Button variant="outlined" onClick={handleSubmit}>ADD TASK</Button>
+                </Box>
+                <Demo>
+                    <List>
+                        {tasks && tasks.map((task: Task) => (
+                            <ListItem key={task.id}>
+                                <ListItemText
+                                    primary={task.text}
+                                />
+                                <IconButton aria-label="delete" size="small" onClick={() => deleteTask(task.id)}>
+                                    <DeleteIcon fontSize="inherit"></DeleteIcon>
+                                </IconButton>
+                                <Button variant="text">EDIT</Button>
+                            </ListItem>
+                        ))}
+                    </List>
+                </Demo>
+            </Grid>
+        </Container>
     );
 }
 
