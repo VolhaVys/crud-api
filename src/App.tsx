@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import './App.css';
 import axios from "axios";
 import {
@@ -24,9 +24,14 @@ function App() {
     const [value, setValue] = useState('');
     const [editValue, setEditValue] = useState('');
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [editTaskId, setEditTaskId] = useState<string | null>(null);
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setValue(event.target.value);
+    };
+
+    const handleEdit = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setEditValue(event.target.value);
     };
 
     const fetchTasks = () => {
@@ -75,10 +80,15 @@ function App() {
             }
         })
             .then(() => {
-                setEditValue('');
+                setEditTaskId(null);
                 fetchTasks();
             })
             .catch((err) => console.log(err));
+    };
+
+    const handleEditClick = (task: Task) => {
+        setEditTaskId(task.id);
+        setEditValue(task.text);
     };
 
     useEffect(() => {
@@ -115,15 +125,37 @@ function App() {
                 </Box>
                 <Demo>
                     <List>
-                        {tasks && tasks.map((task: Task) => (
+                        {tasks.map((task: Task) => (
                             <ListItem key={task.id}>
-                                <ListItemText
-                                    primary={task.text}
-                                />
-                                <IconButton aria-label="delete" size="small" onClick={() => deleteTask(task.id)}>
-                                    <DeleteIcon fontSize="inherit"></DeleteIcon>
-                                </IconButton>
-                                <Button variant="text">EDIT</Button>
+                                {editTaskId === task.id ? (
+                                    <Box sx={{display: 'flex'}}>
+                                        <TextField
+                                            value={editValue}
+                                            autoFocus={true}
+                                            onChange={handleEdit}
+                                            variant="standard"
+                                            placeholder="TODO TASK"
+                                            sx={{width: '60%'}}
+                                        />
+                                        <Button variant="outlined" onClick={() => editTask(task.id)}>
+                                            SAVE
+                                        </Button>
+                                        <Button variant="text" onClick={() => setEditTaskId(null)}>
+                                            CANCEL
+                                        </Button>
+                                    </Box>
+                                ) : (
+                                    <>
+                                        <ListItemText primary={task.text}/>
+                                        <IconButton aria-label="delete" size="small"
+                                                    onClick={() => deleteTask(task.id)}>
+                                            <DeleteIcon fontSize="inherit"/>
+                                        </IconButton>
+                                        <Button variant="text" onClick={() => handleEditClick(task)}>
+                                            EDIT
+                                        </Button>
+                                    </>
+                                )}
                             </ListItem>
                         ))}
                     </List>
