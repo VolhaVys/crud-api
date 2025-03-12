@@ -13,7 +13,7 @@ import {
 import Grid from "@mui/material/Grid2";
 import DeleteIcon from "@mui/icons-material/Delete";
 import React, {useEffect, useState} from "react";
-import axios from "axios";
+import {createTask, fetchTasks, deleteTask as importedDeleteTask, editTask as importedEditTask} from "../api/api";
 
 interface Task {
     id: string;
@@ -34,54 +34,30 @@ const Todo: React.FC = () => {
         setEditValue(event.target.value);
     };
 
-    const fetchTasks = () => {
-        axios.get<Task[]>('https://cae76bc591977258ac51.free.beeceptor.com/api/tasks/', {
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-            .then(response => setTasks(response.data))
-            .catch((err) => console.log(err));
-    };
+    const updateTasks = () => fetchTasks()
+        .then(tasks => setTasks(tasks))
+        .catch((err) => console.log(err));
 
     const handleSubmit = () => {
-        axios.post<Task>('https://cae76bc591977258ac51.free.beeceptor.com/api/tasks/', {
-            text: value,
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-            }
+        createTask(value).then(() => {
+            setValue('');
+            updateTasks();
         })
-            .then(() => {
-                setValue('');
-                fetchTasks();
-            })
             .catch((err) => console.log(err));
     };
 
     const deleteTask = (id: string) => {
-        axios.delete<Task>(`https://cae76bc591977258ac51.free.beeceptor.com/api/tasks/${id}`, {
-            headers: {
-                'Content-Type': 'application/json',
-            }
+        importedDeleteTask(id).then(() => {
+            updateTasks();
         })
-            .then(() => {
-                fetchTasks();
-            })
             .catch((err) => console.log(err));
     }
 
     const editTask = (id: string) => {
-        axios.put<Task>(`https://cae76bc591977258ac51.free.beeceptor.com/api/tasks/${id}`, {
-            text: editValue,
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-            .then(() => {
+        importedEditTask(id, editValue)
+            .then((id) => {
                 setEditTaskId(null);
-                fetchTasks();
+                updateTasks();
             })
             .catch((err) => console.log(err));
     };
@@ -92,7 +68,7 @@ const Todo: React.FC = () => {
     };
 
     useEffect(() => {
-        fetchTasks();
+        updateTasks();
     }, []);
 
     const Demo = styled('div')(({theme}) => ({

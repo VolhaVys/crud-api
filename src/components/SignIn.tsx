@@ -93,6 +93,7 @@ const SignIn: React.FC = () => {
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DemoContainer components={['DateField']}>
                                     <DateField
+                                        label="date of birth"
                                         {...field}
                                         value={dateValue}
                                         format="MM-DD-YYYY"
