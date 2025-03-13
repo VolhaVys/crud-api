@@ -12,19 +12,67 @@ import {
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import DeleteIcon from "@mui/icons-material/Delete";
-import React, {useEffect, useState} from "react";
-import {createTask, fetchTasks, deleteTask as importedDeleteTask, editTask as importedEditTask} from "../api/api";
-
-interface Task {
-    id: string;
-    text: string;
-}
+import React, {useState} from "react";
+import {
+    createTask,
+    fetchTasks,
+    deleteTask as importedDeleteTask,
+    editTask as importedEditTask,
+    NewTask, Task
+} from "../api/api";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 
 const Todo: React.FC = () => {
     const [value, setValue] = useState('');
     const [editValue, setEditValue] = useState('');
-    const [tasks, setTasks] = useState<Task[]>([]);
     const [editTaskId, setEditTaskId] = useState<string | null>(null);
+    const {
+        data: tasks,
+        isLoading,
+        isError,
+        error,
+    } = useQuery<Task[], Error>({
+        queryKey: ['tasks'],
+        queryFn: fetchTasks,
+    });
+
+    const queryClient = useQueryClient();
+
+    const {
+        mutate,
+    } = useMutation<Task, Error, NewTask>({
+        mutationFn: createTask,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ['tasks']});
+        },
+    });
+
+    const {
+        mutate: updateTask,
+    } = useMutation<Task, Error, Task>({
+        mutationFn: importedEditTask,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ['tasks']});
+            setEditTaskId(null);
+        },
+    });
+
+    const {
+        mutate: removeTask,
+    } = useMutation({
+        mutationFn: importedDeleteTask,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ['tasks']});
+        },
+    });
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
+
+    if (isError) {
+        return <div>Error: {error.message}</div>;
+    }
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setValue(event.target.value);
@@ -34,42 +82,22 @@ const Todo: React.FC = () => {
         setEditValue(event.target.value);
     };
 
-    const updateTasks = () => fetchTasks()
-        .then(tasks => setTasks(tasks))
-        .catch((err) => console.log(err));
-
     const handleSubmit = () => {
-        createTask(value).then(() => {
-            setValue('');
-            updateTasks();
-        })
-            .catch((err) => console.log(err));
+        mutate({text: value})
     };
 
     const deleteTask = (id: string) => {
-        importedDeleteTask(id).then(() => {
-            updateTasks();
-        })
-            .catch((err) => console.log(err));
+        removeTask(id)
     }
 
     const editTask = (id: string) => {
-        importedEditTask(id, editValue)
-            .then((id) => {
-                setEditTaskId(null);
-                updateTasks();
-            })
-            .catch((err) => console.log(err));
+        updateTask({id, text: editValue})
     };
 
     const handleEditClick = (task: Task) => {
         setEditTaskId(task.id);
         setEditValue(task.text);
     };
-
-    useEffect(() => {
-        updateTasks();
-    }, []);
 
     const Demo = styled('div')(({theme}) => ({
         backgroundColor: theme.palette.background.paper,
@@ -100,7 +128,7 @@ const Todo: React.FC = () => {
                 </Box>
                 <Demo>
                     <List>
-                        {tasks.map((task: Task) => (
+                        {tasks?.map((task: Task) => (
                             <ListItem key={task.id}>
                                 {editTaskId === task.id ? (
                                     <Box sx={{display: 'flex'}}>
